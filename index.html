@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shortest and Valid route</title>
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 40%;
+            width: 40%;
+            position: relative;
+            float: right;
+        }
+        #right-panel{
+            width: 650%;
+            position: relative;
+            float: left;
+        }
+    </style>
+</head>
+<body>
+<div id="right-panel">
+    <div id="inputs">
+        <pre>
+            var origin1 = 'Kanjani';
+            var origin2 = 'Vadanapalli';
+            var destinationA = 'Thriprayar';
+            var destinationB = 'Thrissur';
+        </pre>
+    </div>
+    <div>
+        <strong>Results</strong>
+    </div>
+    <div id="output">All combinations of routes</div>
+    <div id="output2"><b>Logically possible </b><br/></div>
+    <div id="output3"></div>
+</div>
+
+<div id="map"></div>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBmPVMsFYVaIi8VGEmuf8wHgE9WEMYbJD8&callback=initMap"
+        async defer></script>
+<script>
+    function initMap() {
+        var bounds = new google.maps.LatLngBounds;
+        var markersArray = [];
+        //10.4746772,76.1109852 kanjani
+        //10.4797732,76.053455 vadanappally
+        //10.4150879,76.0980708 thriprayar
+        // 10.5115486,76.1530375 thrissur
+
+        var origin1StartTime = new Date();
+        var origin1EndTime = new Date(new Date().getTime() + (60000 * 30)); // 30min
+        var origin2StartTime = new Date(new Date().getTime() + (60000 * 23)); //23 min
+        var origin2EndTime = new Date(new Date().getTime() + (60000 * 80)); // 80min
+
+        var origin1 = {lat: 10.4746772, lng: 76.1109852}; //kanjani
+        var origin2 = {lat: 10.4797732, lng: 76.053455};//vadanappally
+        var origin3 = {lat: 10.5115486, lng: 76.1530375}; //thrissur
+        var origin4 = {lat: 10.4150879, lng: 76.0980708}; //thriprayar
+
+
+        var destinationA = {lat: 10.4150879, lng: 76.0980708}; //thriprayar
+        var destinationC = {lat: 10.4797732, lng: 76.053455}; //vadanappally
+        var destinationB = {lat: 10.5115486, lng: 76.1530375}; //thrissur
+        var destinationD = {lat: 10.4746772, lng: 76.1109852}; //Kanjani
+        var num1 = 0;
+        var num2 = 0;
+        var num3 = 0;
+        var num4 = 0;
+        var destinationIcon = 'https://chart.googleapis.com/chart?' +
+                'chst=d_map_pin_letter&chld=D|FF0000|000000';
+        var originIcon = 'https://chart.googleapis.com/chart?' +
+                'chst=d_map_pin_letter&chld=O|FFFF00|000000';
+        var map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 55.53, lng: 9.4},
+            zoom: 10
+        });
+        var geocoder = new google.maps.Geocoder;
+
+        var service = new google.maps.DistanceMatrixService;
+        service.getDistanceMatrix({
+            origins: [origin1, origin2, origin3, origin4],
+            destinations: [destinationA, destinationB, destinationC, destinationD],
+            travelMode: 'DRIVING',
+            unitSystem: google.maps.UnitSystem.METRIC,
+            avoidHighways: false,
+            avoidTolls: false
+        }, function (response, status) {
+            if (status !== 'OK') {
+                alert('Error was: ' + status);
+            } else {
+                var originList = response.originAddresses;
+                var destinationList = response.destinationAddresses;
+                var outputDiv = document.getElementById('output');
+                var outputDiv2 = document.getElementById('output2');
+                var outputDiv3 = document.getElementById('output3');
+                outputDiv.innerHTML = '';
+                deleteMarkers(markersArray);
+
+                var showGeocodedAddressOnMap = function (asDestination) {
+                    var icon = asDestination ? destinationIcon : originIcon;
+                    return function (results, status) {
+                        if (status === 'OK') {
+                            map.fitBounds(bounds.extend(results[0].geometry.location));
+                            markersArray.push(new google.maps.Marker({
+                                map: map,
+                                position: results[0].geometry.location,
+                                icon: icon
+                            }));
+                        } else {
+                            alert('Geocode was not successful due to: ' + status);
+                        }
+                    };
+                };
+                var results;
+                var originaArray = [];
+                var originbArray = [];
+                var origincArray = [];
+                var origindArray = [];
+                for (var i = 0; i < originList.length; i++) {
+                    results = response.rows[i].elements;
+                    geocoder.geocode({'address': originList[i]},
+                            showGeocodedAddressOnMap(true));
+                    for (var j = 0; j < results.length; j++) {
+                        geocoder.geocode({'address': destinationList[j]},
+                                showGeocodedAddressOnMap(true));
+                        outputDiv.innerHTML += originList[i] + ' to ' + destinationList[j] +
+                                ': ' + results[j].distance.text + ' in ' +
+                                results[j].duration.text + '<br>';
+                        // list of possible routes from one location
+                        // in results one location to another location is showing 1M in 1
+                        // by calculating unit in miles and converting back to KM this can be avoided
+                        var pointsArrayA = ['kp', 'vp', 'tp', 'pp'];
+                        var pointsArrayB = ['kt', 'vt', 'tt', 'pt'];
+                        var pointsArrayC = ['kv', 'vv', 'tv', 'pv'];
+                        var pointsArrayD = ['kk', 'vk', 'tk', 'pk'];
+
+
+                        switch (j) {
+                            case 0:
+                                var key = pointsArrayA[num1].toString();
+                                num1++;
+                                var val = {};
+                                val[key] = parseFloat(results[j].distance.text.replace(/[^0-9\.]+/g, ""));
+                                val['time'] = parseFloat(results[j].duration.text);
+                                originaArray.push(val);
+                                break;
+                            case 1:
+                                var key = pointsArrayB[num2].toString();
+                                num2++;
+                                var val = {};
+                                val[key] = parseFloat(results[j].distance.text.replace(/[^0-9\.]+/g, ""));
+                                val['time'] = parseFloat(results[j].duration.text);
+                                originbArray.push(val);
+                                break;
+                            case 2:
+
+                                var key = pointsArrayC[num3].toString();
+                                num3++;
+                                var val = {};
+                                val[key] = parseFloat(results[j].distance.text.replace(/[^0-9\.]+/g, ""));
+                                val['time'] = parseFloat(results[j].duration.text);
+                                origincArray.push(val);
+                                break;
+                            case 3:
+                                var key = pointsArrayD[num4].toString();
+                                num4++;
+                                var val = {};
+                                val[key] = parseFloat(results[j].distance.text.replace(/[^0-9\.]+/g, ""));
+                                val['time'] = parseFloat(results[j].duration.text);
+                                origindArray.push(val);
+                                break;
+
+                        }
+
+                    }
+
+                }
+                originaArray.splice(3, 1);
+                originbArray.splice(2, 1);
+                origincArray.splice(1, 1);
+                origindArray.splice(0, 1);
+
+                var routesArray = originaArray.concat(originbArray, origincArray, origindArray);
+                var routeDetailsArray = [];
+                var possibleRoutes = ['vktp', 'vkpt', 'vpkt', 'vtkp', 'kvpt', 'kvtp', 'kpvt', 'ktvp'];
+                possibleRoutes.map(function (journey) {
+
+                    var route1 = journey[0] + journey[1];
+                    var route2 = journey[1] + journey[2];
+
+                    var route3 = journey[2] + journey[3];
+                    var distanceRoute1, distanceRoute2, distanceRoute3, durationRoute1, durationRoute2, durationRoute3, firstUser, secondUser, timeTravelledByUserK = 0, timeTravelledByUserV = 0, logic = true, timeforKtoreachV, timeforVtoreachK, vCompletedTraveling = false, kCompletedTraveling = false;
+                    routesArray.forEach(function (obj) {
+
+                        if (obj.hasOwnProperty(route1)) {
+
+                            distanceRoute1 = obj[route1];
+                            durationRoute1 = obj['time'];
+
+                            if (route1[0] === 'k') {
+
+                                firstUser = 'k';
+                                timeTravelledByUserK += obj['time'];
+                                timeforVtoreachK = timeTravelledByUserK;
+
+                            } else if (route1[0] === 'v') {
+
+                                firstUser = 'v';
+                                timeTravelledByUserV += obj['time'];
+                                timeforKtoreachV = timeTravelledByUserV;
+
+
+                            }
+                        }
+                        if (obj.hasOwnProperty(route2)) {
+                            distanceRoute2 = obj[route2];
+                            durationRoute2 = obj['time'];
+                            switch (route2[0]) {
+                                case 'k':
+                                    secondUser = 'k';
+                                    timeTravelledByUserK += obj['time'];
+                                    timeTravelledByUserV += obj['time'];
+                                    timeforVtoreachK = timeTravelledByUserK;
+                                    break;
+                                case 'v':
+                                    secondUser = 'v';
+                                    timeTravelledByUserK += obj['time'];
+                                    timeTravelledByUserV += obj['time'];
+                                    timeforKtoreachV = timeTravelledByUserV;
+
+                                    break;
+                                case 'p':
+
+                                    if (route1[0] === 'k') {
+                                        kCompletedTraveling = true;
+
+
+                                    } else if (route1[0] === 'v') {
+                                        timeTravelledByUserV += obj['time'];
+                                        logic = false;
+                                    }
+
+                                    break;
+                                case 't':
+                                    if (route1[0] === 'k') {
+                                        timeTravelledByUserK += obj['time'];
+                                        logic = false;
+                                    } else if (route1[0] === 'v') {
+                                        vCompletedTraveling = true;
+                                    }
+
+
+                                    break;
+                            }
+
+
+                        }
+                        if (obj.hasOwnProperty(route3)) {
+                            distanceRoute3 = obj[route3];
+                            durationRoute3 = obj['time'];
+
+                            switch (route3[0]) {
+                                case 'k':
+
+                                    secondUser = 'k';
+                                    timeTravelledByUserK += obj['time'];
+                                    if (!vCompletedTraveling) {
+                                        timeTravelledByUserV += obj['time'];
+                                    }
+                                    timeforVtoreachK = timeTravelledByUserK;
+                                    break;
+                                case 'v':
+                                    secondUser = 'v';
+                                    timeTravelledByUserV += obj['time'];
+                                    timeforKtoreachV = timeTravelledByUserV;
+                                    if (!kCompletedTraveling) {
+                                        timeTravelledByUserK += obj['time'];
+                                    }
+                                    break;
+                                case 'p':
+
+                                    if (firstUser || secondUser === 'k') {
+                                    }
+                                    if (firstUser !== 'k' && secondUser !== 'k') {
+                                        logic = false;
+                                    }
+                                    if (!vCompletedTraveling) {
+                                        timeTravelledByUserV += obj['time'];
+                                    }
+
+                                    break;
+                                case 't':
+
+                                    if (route1[0] === 'v') {
+
+                                    }
+                                    if (firstUser !== 'v' && secondUser !== 'v') {
+                                        logic = false;
+                                    }
+                                    if (!kCompletedTraveling) {
+                                        timeTravelledByUserK += obj['time'];
+                                    }
+
+
+                                    break;
+                            }
+                            switch (route3[1]) {
+                                case 'k':
+
+                                    if (route1[0] === 'k') {
+                                        timeforVtoreachK = timeTravelledByUserK + obj['time'];
+                                    }
+
+                                    break;
+                                case 'v':
+                                    if (route1[0] === 'v') {
+                                        timeforKtoreachV = timeTravelledByUserV + obj['time'];
+                                    }
+
+
+                            }
+
+                        }
+
+
+                    });
+                    if (distanceRoute1 && distanceRoute2 && distanceRoute3) {
+                        var totalDistance = distanceRoute1 + distanceRoute2 + distanceRoute3;
+                        var totalDuration = durationRoute1 + durationRoute2 + durationRoute3;
+                        var routeDetails = {};
+                        routeDetails['firstuser'] = firstUser;
+                        routeDetails['seconduser'] = secondUser;
+                        routeDetails['timeforKtoreachV'] = timeforKtoreachV;
+                        routeDetails['timeforVtoreachK'] = timeforVtoreachK;
+                        if (firstUser === 'k') {
+                            routeDetails['firstuser_duration'] = timeTravelledByUserK;
+                            routeDetails['seconduser_duration'] = timeTravelledByUserV;
+
+                        } else {
+                            routeDetails['firstuser_duration'] = timeTravelledByUserV;
+                            routeDetails['seconduser_duration'] = timeTravelledByUserK;
+
+                        }
+
+
+                        routeDetails['logic'] = logic;
+                        routeDetails['location'] = journey;
+                        routeDetails['distance'] = totalDistance;
+                        routeDetails['duration'] = totalDuration;
+                        routeDetailsArray.push(routeDetails);
+
+                    }
+                });
+                routeDetailsArray.sort(function (a, b) {
+                    return parseFloat(a.distance, 10) - parseFloat(b.distance, 10);
+                });
+                outputDiv.innerHTML += '<br/> <b>Routes </b></br> </br>';
+                routeDetailsArray.map(function (route) {
+                    var location = route.location.split('');
+                    var toPlaces = '';
+                    location.map(function (letter) {
+                        switch (letter) {
+                            case 'k':
+                                toPlaces += ' Kanjani';
+                                break;
+                            case 'v':
+                                toPlaces += ' Vadanapalli';
+                                break;
+                            case 'p':
+                                toPlaces += ' Triprayar';
+                                break;
+                            case 't':
+                                toPlaces += ' Thrissur';
+                                break;
+                        }
+                    });
+
+                    outputDiv.innerHTML += toPlaces + '<br/>' + route.distance + ' km - Duration ' + route.duration + ' Minutes <br /><br />' + 'first user : ' + route.firstuser + ' firstuser duration: ' + route.firstuser_duration + ' second user : ' + route.seconduser + ' seconduser duration : ' + route.seconduser_duration + '<br/><br/>';
+                    ;
+
+                    if (route.logic === true) {
+                        outputDiv2.innerHTML += toPlaces + '<br/>' + route.distance + ' km - Duration ' + route.duration + ' Minutes <br /><br />' + 'first user : ' + route.firstuser + ' firstuser duration: ' + route.firstuser_duration + ' second user : ' + route.seconduser + ' seconduser duration : ' + route.seconduser_duration + '<br/><br/>';
+                    }
+                    if (route.logic === true) {
+                        // hardcoded :)
+                        if (route.firstuser_duration <= 30 && route.seconduser_duration <= 57) {
+                            if (route.timeforKtoreachV >= 0 && route.timeforVtoreachK > 0) {
+                                outputDiv3.innerHTML += toPlaces + '<br/>' + route.distance + ' km - Duration ' + route.duration + ' Minutes <br /><br />' + 'first user : ' + route.firstuser + ' firstuser duration: ' + route.firstuser_duration + ' second user : ' + route.seconduser + ' seconduser duration : ' + route.seconduser_duration + '<br/><br/>';
+                            }
+                        } else {
+                            outputDiv3.innerHTML = '<b>Valid and Short route </b> <br/><span>No possible routes</span>';
+                        }
+
+                    }
+                });
+
+
+            }
+        });
+    }
+
+    function deleteMarkers(markersArray) {
+        for (var i = 0; i < markersArray.length; i++) {
+            markersArray[i].setMap(null);
+        }
+        markersArray = [];
+    }
+
+</script>
+</body>
+</html>
+
